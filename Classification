@@ -1,0 +1,69 @@
+About dataset: This dataset contains 10000 observations and 14 features, containing information of the customers of a bank. During six months, bank looked for each customer, if the customer stayed or left the bank within a period of six months. This result whether customer stayed or left is given in last column "exited" Our goal is to make model where we can predict this result exited(0 or 1) from the given independent variables.
+
+Importing the dataset
+data =  read.csv("../input/Churn_Modelling.csv")
+#Lets remove the fetures which are not important to dependent variable
+data = data[4:14]
+
+
+#Encoding the categorical variable as factors
+data$Geography = as.numeric(data$Geography,level = c('France','Spain','Germany'),labels = c(1,2,3))
+data$Gender = as.numeric(data$Gender,levels = c('Female','Male'),labels = c(1,2))
+head(data)
+str(data)
+
+
+#Splittig the data into training and test
+#install.packages('caTools)
+library(caTools)
+set.seed(123)
+split = sample.split(data$Exited,SplitRatio = 0.8)
+train = subset(data,split == TRUE)
+test = subset(data,split == FALSE)
+#Feature scaling
+train[-11] = scale(train[-11])
+test[-11] = scale(test[-11])
+
+
+
+About h2o:- h2o is a open source software platform that allows you to connect to an instance of computer system that allows your model to run very efficiently.
+#Fitting ANN to the training set
+#install.packages("h2o")
+library(h2o)
+h2o.init(nthreads = -1)
+classifier = h2o.deeplearning(y = 'Exited',training_frame = as.h2o(train),
+                             activation = 'Rectifier',
+                              hidden = c(6,6),
+                              epochs = 100,
+                              train_samples_per_iteration = -2)
+
+ Where,
+                1) hidden---->Hidden layer sizes
+                
+               2) 6,6------->first six is no. of hidden layers
+                                          second six is nodes in each hidden layer
+                                          
+              3) why only 6??
+                   because, average of no. of input nodes & no. of output node i.e., 10+1/2 = 5.5 =6
+                    10 is independent variable
+                    1 is dependent variable
+                    
+               4) epochs----->How many times the dataset should be iterated, can be fractional
+               
+               
+#predicting the test set results
+prob_pred = h2o.predict(classifier, newdata = as.h2o(test[-11]))
+y_pred = (prob_pred >0.5) #it is in h2o format
+y_pred = as.vector(y_pred) #changing from h20 to vector
+
+
+#Making the confusion matrix
+cm = table(test[,11],y_pred)
+cm
+1529+200
+1729/2000
+
+
+#To disconnect from server
+#h2o.shutdown()
+
